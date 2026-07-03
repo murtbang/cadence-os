@@ -1,0 +1,4 @@
+boostcampapi @ git+https://github.com/Alex-Keyes/boostcamp-api.git@92ce95cc96dc0ca82b3a2400c824e622d085635c
+supabase>=2.0.0
+httpx>=0.28.0
+python-dotenv>=1.0.0

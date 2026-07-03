@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+
+# Web service (enable App Sleeping in the Railway dashboard so it scales to zero
+# when idle). It's purely request-driven: POST /sync handles both manual "Pull now"
+# taps and the scheduled 3x/day syncs, which a Vercel cron in the cadence app
+# (/api/cron/boostcamp-pull) sends — that inbound request also wakes the service.
+# Replaces the old cron-only deploy: startCommand "python sync.py" + cronSchedule.
+[deploy]
+startCommand = "python server.py"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

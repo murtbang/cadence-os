@@ -20,6 +20,13 @@
 .DS_Store
 *.pem
 
+# python (services/boostcamp-sync, services/voice-scheduler)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
 # debug
 *.log
 npm-debug.log*

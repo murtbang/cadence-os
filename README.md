@@ -1,6 +1,6 @@
 # Cadence
 
-**A self-hosted personal daily operating system.** Cadence puts your habits, to-dos, calendar, training, weather, goals, and smart-light controls into one dense, glanceable dashboard — with a Discord bot so you can log and check things from your phone without opening the app.
+**A self-hosted personal daily operating system.** Cadence puts your habits, to-dos, calendar, training, weather, and goals into one dense, glanceable dashboard — with a Discord bot so you can log and check things from your phone without opening the app.
 
 It's built to run on a wall-mounted tablet (designed around a Samsung Galaxy Tab A7 Lite in landscape), but it works in any browser and installs as a PWA on phones.
 
@@ -8,8 +8,23 @@ It's built to run on a wall-mounted tablet (designed around a Samsung Galaxy Tab
 
 ---
 
+## What's in this repo
+
+Cadence is a small monorepo with three independently-deployed pieces:
+
+| Directory | What it is | Runs on |
+|---|---|---|
+| `/` (root) | **The dashboard** — the Next.js web app + Discord bot + API. This is the core; the two services below are optional add-ons. | Vercel |
+| [`services/boostcamp-sync/`](services/boostcamp-sync) | **Training sync** — a Python service that logs into Boostcamp, classifies each workout (Push/Pull/Legs + muscles worked), and writes it to your Supabase. Feeds the Training view. | Railway |
+| [`services/voice-scheduler/`](services/voice-scheduler) | **Voice scheduler** — a Python Discord bot: drop a voice memo in a channel → Whisper transcribes it → it becomes a calendar event via the dashboard's `/api/schedule`. | Railway |
+
+Each service has its own README and `.env.example`. **Set up the dashboard first** — the services just read/write the same Supabase project and call the dashboard's API, so they're only useful once it's running.
+
+---
+
 ## Contents
 
+- [What's in this repo](#whats-in-this-repo)
 - [Features](#features)
 - [How it works](#how-it-works)
 - [Prerequisites](#prerequisites)
@@ -199,8 +214,8 @@ The schedules live in [`vercel.json`](vercel.json) and register automatically on
 
 ### 9. Optional extras
 
-- **Voice-to-action** (`/api/schedule`): set `ANTHROPIC_API_KEY` and `SCHEDULE_SECRET`. POST `{ "text": "dentist tuesday at 2pm" }` with header `x-schedule-secret`; an LLM routes it to the right action. Wire this to any voice/transcription source.
-- **Boostcamp training sync**: a companion service (separate repo) that logs into Boostcamp, classifies workouts, and writes them to Supabase. Set `BOOSTCAMP_SYNC_URL` + `BOOSTCAMP_SYNC_SECRET`.
+- **Voice-to-action** (`/api/schedule`): set `ANTHROPIC_API_KEY` and `SCHEDULE_SECRET`. POST `{ "text": "dentist tuesday at 2pm" }` with header `x-schedule-secret`; an LLM routes it to the right action. Wire it to any transcription source — or deploy the ready-made **[`services/voice-scheduler/`](services/voice-scheduler)** Discord bot: drop a voice memo in a channel and it transcribes and schedules it for you.
+- **Boostcamp training sync**: the companion service in **[`services/boostcamp-sync/`](services/boostcamp-sync)** logs into Boostcamp, classifies workouts, and writes them to Supabase. Set `BOOSTCAMP_SYNC_URL` + `BOOSTCAMP_SYNC_SECRET` here, then deploy that service (see its README + `DEPLOY.md`).
 
 ---
 
@@ -248,6 +263,9 @@ types/               shared TypeScript types
 db/schema.sql        full database schema (run once in Supabase)
 middleware.ts        PIN auth gate
 vercel.json          cron schedules
+services/            optional companion services (deployed separately on Railway)
+  boostcamp-sync/    Python — Boostcamp → Supabase training sync
+  voice-scheduler/   Python — Discord voice-memo → calendar-event bot
 ```
 
 ---
