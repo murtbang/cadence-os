@@ -20,10 +20,18 @@ export interface Todo {
   id: string;
   text: string;
   priority: 'high' | 'low';
-  category: 'personal' | 'aevro';
+  category: string;          // a TodoCategory name (default 'Personal')
   completed: boolean;
   order: number;
   due_date: string | null;   // 'YYYY-MM-DD' due date, null = untimed
+  created_at: string;
+}
+
+export interface TodoCategory {
+  id: string;
+  name: string;
+  color: string;             // CSS color/var, e.g. 'var(--blue)'
+  order: number;
   created_at: string;
 }
 

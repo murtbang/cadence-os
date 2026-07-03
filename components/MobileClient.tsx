@@ -102,11 +102,15 @@ export default function MobileClient({ onSwitchToTablet }: { onSwitchToTablet: (
           <Fill>
             <TodoCard
               todos={d.todos}
+              categories={d.categories}
               onToggle={d.handleToggleTodo}
               onReorder={d.handleReorderTodo}
               onAdd={d.handleAddTodo}
               onDelete={d.handleDeleteTodo}
               onEdit={d.handleEditTodo}
+              onAddCategory={d.handleAddCategory}
+              onRenameCategory={d.handleRenameCategory}
+              onDeleteCategory={d.handleDeleteCategory}
             />
           </Fill>
         )}

@@ -53,16 +53,7 @@ const COMMANDS = [
           { name: 'Low',  value: 'low'  },
         ],
       },
-      {
-        name: 'category',
-        description: 'Which list to add to (default: Personal)',
-        type: 3,
-        required: false,
-        choices: [
-          { name: 'Personal', value: 'personal' },
-          { name: 'Aevro',    value: 'aevro'    },
-        ],
-      },
+      { name: 'category', description: 'Category name (default: Personal)', type: 3, required: false },
       { name: 'due', description: 'Due date — YYYY-MM-DD, today, or tomorrow', type: 3, required: false },
     ],
   },

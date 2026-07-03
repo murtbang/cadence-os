@@ -2,24 +2,21 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { IonCheckbox, IonReorder, IonReorderGroup, ItemReorderEventDetail } from '@ionic/react';
-import { Todo } from '@/types/database';
-
-type Category = 'personal' | 'aevro';
+import { Todo, TodoCategory } from '@/types/database';
 
 interface TodoCardProps {
   todos: Todo[];
+  categories: TodoCategory[];
   onToggle: (id: string, completed: boolean) => Promise<void>;
   onReorder: (id: string, newOrder: number) => Promise<void>;
-  onAdd: (text: string, priority: 'high' | 'low', category: Category, dueDate: string | null) => Promise<void>;
+  onAdd: (text: string, priority: 'high' | 'low', category: string, dueDate: string | null) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onEdit: (id: string, text: string, priority: 'high' | 'low', dueDate: string | null) => Promise<void>;
+  onAddCategory: (name: string) => Promise<void>;
+  onRenameCategory: (id: string, name: string) => Promise<void>;
+  onDeleteCategory: (id: string) => Promise<void>;
   onNavigate?: () => void;
 }
-
-const TABS: { id: Category; label: string; color: string }[] = [
-  { id: 'personal', label: 'Personal', color: 'var(--blue)'   },
-  { id: 'aevro',    label: 'Aevro',    color: 'var(--indigo)' },
-];
 
 // Timed todos float to the top of their section by urgency (overdue → soonest);
 // untimed todos keep their manual drag order below.
@@ -54,11 +51,26 @@ function DueBadge({ date, completed }: { date: string; completed: boolean }) {
   );
 }
 
-export default function TodoCard({ todos, onToggle, onReorder, onAdd, onDelete, onEdit, onNavigate }: TodoCardProps) {
-  const [activeTab, setActiveTab] = useState<Category>('personal');
+export default function TodoCard({ todos, categories, onToggle, onReorder, onAdd, onDelete, onEdit, onAddCategory, onRenameCategory, onDeleteCategory, onNavigate }: TodoCardProps) {
+  const firstCat = categories[0]?.name ?? 'Personal';
+  const [activeTab, setActiveTab] = useState<string>(firstCat);
   const [addingPriority, setAddingPriority] = useState<'high' | 'low' | null>(null);
   const [newText, setNewText] = useState('');
   const [newDue,  setNewDue]  = useState('');
+  // Category management
+  const [addingCat,     setAddingCat]     = useState(false);
+  const [newCatName,    setNewCatName]    = useState('');
+  const [managing,      setManaging]      = useState(false);
+  const [renameId,      setRenameId]      = useState<string | null>(null);
+  const [renameText,    setRenameText]    = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<TodoCategory | null>(null);
+
+  // Snap to a valid category on load or when the active one is deleted.
+  useEffect(() => {
+    if (categories.length && !categories.some(c => c.name === activeTab)) {
+      setActiveTab(categories[0].name);
+    }
+  }, [categories, activeTab]);
 
   // Reset add form when switching tabs
   useEffect(() => {
@@ -67,7 +79,7 @@ export default function TodoCard({ todos, onToggle, onReorder, onAdd, onDelete, 
     setNewDue('');
   }, [activeTab]);
 
-  const tabTodos  = todos.filter(t => (t.category ?? 'personal') === activeTab);
+  const tabTodos  = todos.filter(t => (t.category ?? firstCat) === activeTab);
   const high      = sortByDue(tabTodos.filter(t => t.priority === 'high' && !t.completed));
   const low       = sortByDue(tabTodos.filter(t => t.priority === 'low'  && !t.completed));
   const done      = [
@@ -95,7 +107,23 @@ export default function TodoCard({ todos, onToggle, onReorder, onAdd, onDelete, 
     setAddingPriority(null);
   }, [newText, newDue, addingPriority, activeTab, onAdd]);
 
-  const activeColor = TABS.find(t => t.id === activeTab)!.color;
+  const activeColor = categories.find(c => c.name === activeTab)?.color ?? 'var(--blue)';
+
+  async function submitAddCat() {
+    const n = newCatName.trim();
+    if (!n) return;
+    await onAddCategory(n);
+    setNewCatName(''); setAddingCat(false); setActiveTab(n);
+  }
+  async function submitRename(id: string) {
+    const n = renameText.trim();
+    if (n) { await onRenameCategory(id, n); setActiveTab(n); }
+    setRenameId(null);
+  }
+  async function doDeleteCat(cat: TodoCategory) {
+    await onDeleteCategory(cat.id);
+    setConfirmDelete(null);
+  }
 
   return (
     <section style={{ background: 'var(--card)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow)', border: '1px solid var(--sep)', display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', overflow: 'hidden' }}>
@@ -114,52 +142,82 @@ export default function TodoCard({ todos, onToggle, onReorder, onAdd, onDelete, 
           )}
         </div>
 
-        {/* ── Tabs ──────────────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '0' }}>
-          {TABS.map(tab => {
-            const count = todos.filter(t => (t.category ?? 'personal') === tab.id && !t.completed).length;
-            const active = activeTab === tab.id;
+        {/* ── Category tabs (dynamic) ───────────────────────────────────────── */}
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '0', overflowX: 'auto', alignItems: 'stretch' }}>
+          {categories.map(cat => {
+            const count  = todos.filter(t => (t.category ?? firstCat) === cat.name && !t.completed).length;
+            const active = activeTab === cat.name;
+
+            if (managing && renameId === cat.id) {
+              return (
+                <input key={cat.id} autoFocus value={renameText}
+                  onChange={e => setRenameText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') submitRename(cat.id); if (e.key === 'Escape') setRenameId(null); }}
+                  onBlur={() => submitRename(cat.id)}
+                  style={{ flexShrink: 0, minHeight: '34px', width: '96px', fontSize: '11px', fontWeight: 800, color: 'var(--black)', background: 'var(--gray-6)', border: `1.5px solid ${cat.color}`, borderRadius: 'var(--r-md) var(--r-md) 0 0', padding: '0 8px', outline: 'none' }} />
+              );
+            }
+
             return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
+              <button key={cat.id} type="button"
+                onClick={() => { if (managing) { setRenameId(cat.id); setRenameText(cat.name); } else setActiveTab(cat.name); }}
                 style={{
-                  flex: 1,
-                  minHeight: '34px',
-                  border: 'none',
+                  flexShrink: 0, minHeight: '34px', padding: '0 12px', border: 'none',
                   borderRadius: 'var(--r-md) var(--r-md) 0 0',
-                  background: active ? tab.color : 'var(--gray-6)',
+                  background: active ? cat.color : 'var(--gray-6)',
                   color: active ? '#fff' : 'var(--gray-3)',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '5px',
-                  transition: 'background 0.15s, color 0.15s',
-                  WebkitTapHighlightColor: 'transparent',
+                  fontSize: '11px', fontWeight: 800, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  transition: 'background 0.15s, color 0.15s', WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                {tab.label}
+                {cat.name}
                 {count > 0 && (
-                  <span style={{
-                    fontSize: '9px', fontWeight: 900,
-                    background: active ? 'rgba(255,255,255,0.25)' : 'var(--gray-5)',
-                    color: active ? '#fff' : 'var(--gray-3)',
-                    borderRadius: 'var(--r-pill)',
-                    padding: '1px 5px',
-                    fontFamily: 'var(--font-geist-mono), monospace',
-                    lineHeight: 1.6,
-                  }}>{count}</span>
+                  <span style={{ fontSize: '9px', fontWeight: 900, background: active ? 'rgba(255,255,255,0.25)' : 'var(--gray-5)', color: active ? '#fff' : 'var(--gray-3)', borderRadius: 'var(--r-pill)', padding: '1px 5px', fontFamily: 'var(--font-geist-mono), monospace', lineHeight: 1.6 }}>{count}</span>
+                )}
+                {managing && (
+                  <span onClick={e => { e.stopPropagation(); setConfirmDelete(cat); }} title="Delete category"
+                    style={{ marginLeft: '2px', fontSize: '13px', lineHeight: 1, opacity: 0.85 }}>×</span>
                 )}
               </button>
             );
           })}
+
+          {!managing && (
+            <button type="button" onClick={() => { setAddingCat(v => !v); setNewCatName(''); }} title="Add category"
+              style={{ flexShrink: 0, minHeight: '34px', minWidth: '34px', border: '1px dashed var(--gray-5)', borderRadius: 'var(--r-md) var(--r-md) 0 0', background: 'transparent', color: 'var(--gray-3)', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}>＋</button>
+          )}
+
+          {categories.length > 0 && (
+            <button type="button" onClick={() => { setManaging(v => !v); setRenameId(null); setAddingCat(false); }} title="Edit categories"
+              style={{ flexShrink: 0, minHeight: '34px', minWidth: '38px', border: 'none', borderRadius: 'var(--r-md) var(--r-md) 0 0', background: managing ? 'var(--blue)' : 'var(--gray-6)', color: managing ? '#fff' : 'var(--gray-3)', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>
+              {managing ? 'Done' : '✎'}
+            </button>
+          )}
         </div>
-        {/* Active tab bottom bar */}
-        <div style={{ height: '2px', background: activeColor, borderRadius: '0 0 2px 2px', marginBottom: '2px' }} />
+
+        {addingCat && (
+          <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+            <input autoFocus value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="New category name"
+              onKeyDown={e => { if (e.key === 'Enter') submitAddCat(); if (e.key === 'Escape') { setAddingCat(false); setNewCatName(''); } }}
+              style={{ flex: 1, minHeight: '38px', fontSize: '12px', color: 'var(--black)', background: 'var(--gray-6)', border: '1px solid var(--sep)', borderRadius: 'var(--r-md)', padding: '0 10px', outline: 'none', minWidth: 0 }} />
+            <button type="button" onClick={submitAddCat} style={{ minHeight: '38px', padding: '0 14px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--blue)', color: 'var(--bg)', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>Add</button>
+          </div>
+        )}
+
+        {confirmDelete && (
+          <div style={{ marginTop: '6px', padding: '9px 11px', borderRadius: 'var(--r-md)', background: 'var(--gray-6)', border: '1px solid var(--red)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--gray-1)', marginBottom: '7px', lineHeight: 1.4 }}>
+              Delete “{confirmDelete.name}”? Its tasks move to “{categories.find(c => c.id !== confirmDelete.id)?.name ?? 'Personal'}”.
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button type="button" onClick={() => doDeleteCat(confirmDelete)} style={{ fontSize: '11px', fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--r-pill)', border: 'none', background: 'var(--red)', color: '#fff', cursor: 'pointer' }}>Delete</button>
+              <button type="button" onClick={() => setConfirmDelete(null)} style={{ fontSize: '11px', fontWeight: 800, padding: '5px 14px', borderRadius: 'var(--r-pill)', border: '1px solid var(--sep)', background: 'transparent', color: 'var(--gray-3)', cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        <div style={{ height: '2px', background: activeColor, borderRadius: '0 0 2px 2px', marginBottom: '2px', marginTop: '2px' }} />
       </div>
 
       {/* ── Scrollable body ─────────────────────────────────────────────────── */}

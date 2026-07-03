@@ -30,12 +30,25 @@ create table if not exists habit_logs (
   unique (habit_id, date)
 );
 
+-- ── To-do categories (user-managed tabs) ────────────────────────────────────
+create table if not exists todo_categories (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,             -- display name; todos.category references this
+  color      text not null default 'var(--blue)',
+  "order"    int  not null default 0,
+  created_at timestamptz not null default now()
+);
+-- Seed the default category. Add more in-app with the ＋ tab.
+insert into todo_categories (name, color, "order")
+  values ('Personal', 'var(--blue)', 0)
+  on conflict (name) do nothing;
+
 -- ── To-dos ──────────────────────────────────────────────────────────────────
 create table if not exists todos (
   id         uuid primary key default gen_random_uuid(),
   text       text not null,
-  priority   text not null default 'low'      check (priority in ('high','low')),
-  category   text not null default 'personal' check (category in ('personal','aevro')),
+  priority   text not null default 'low' check (priority in ('high','low')),
+  category   text not null default 'Personal', -- a todo_categories.name
   completed  boolean not null default false,
   "order"    int  not null default 0,          -- sort order within (priority, category)
   due_date   date,                             -- optional due date; null = untimed
@@ -124,6 +137,7 @@ create table if not exists boostcamp_summary (
 -- (No policies = anon/browser denied; the server's service-role key bypasses RLS.)
 alter table habits              enable row level security;
 alter table habit_logs          enable row level security;
+alter table todo_categories     enable row level security;
 alter table todos               enable row level security;
 alter table notifications       enable row level security;
 alter table weight_logs         enable row level security;

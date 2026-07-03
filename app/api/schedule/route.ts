@@ -36,7 +36,7 @@ const TOOLS = [
       properties: {
         text:     { type: 'string' },
         priority: { type: 'string', enum: ['high', 'low'], description: 'Default low unless urgency is stated.' },
-        category: { type: 'string', enum: ['personal', 'aevro'], description: '"aevro" = work; default personal.' },
+        category: { type: ['string', 'null'], description: 'Category name if the user names one (e.g. "work"), else null → Personal.' },
         due:      { type: ['string', 'null'], description: 'Due date YYYY-MM-DD, or null.' },
       },
       required: ['text', 'priority', 'category', 'due'],
@@ -185,7 +185,13 @@ async function doEvent(i: any) {
 
 async function doTodo(i: any) {
   const priority = i.priority ?? 'low';
-  const category = i.category ?? 'personal';
+  // Match the spoken category to an existing one (case-insensitive); else Personal.
+  let category = 'Personal';
+  if (typeof i.category === 'string' && i.category.trim()) {
+    const { data: cats } = await supabase.from('todo_categories').select('name');
+    const match = (cats ?? []).find((c: { name: string }) => c.name.toLowerCase() === i.category.trim().toLowerCase());
+    category = match?.name ?? 'Personal';
+  }
   // `due` is a required field, so an unspoken date can arrive as junk — parse
   // defensively so a placeholder becomes "no due date" instead of a 500.
   let due_date: string | null = null;

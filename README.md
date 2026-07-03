@@ -43,7 +43,7 @@ It's built to run on a wall-mounted tablet (designed around a Samsung Galaxy Tab
 
 **Habits** — AM/PM checklists with streaks and 7-day completion, soft-delete, per-period tracking.
 
-**To-dos** — Personal / work tabs, high/low priority, drag-to-reorder, and **due dates** that badge in the list, appear on the calendar, and escalate through your daily check-ins.
+**To-dos** — custom categories you add / rename / delete right in the app (starts with a "Personal" tab), high/low priority, drag-to-reorder, and **due dates** that badge in the list, appear on the calendar, and escalate through your daily check-ins.
 
 **Calendar** — a week strip plus a 30-day scrollable agenda from your Google Calendar, with timed to-dos overlaid on their due day.
 
@@ -216,7 +216,7 @@ Cadence ships with the original author's defaults. Change these before (or after
 | **Weather coordinates** | set `WEATHER_LAT` / `WEATHER_LON` env vars (US only — NWS) | your lat/lon |
 | **Location label** | `components/HomeClient.tsx`, `components/MobileClient.tsx`, `components/WeatherView.tsx` | your city name |
 | **Timezone** | `America/Los_Angeles` appears throughout (`lib/`, `app/api/cron/*`, components) | search-and-replace with your [IANA timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) |
-| **To-do categories** | the two tabs are `Personal` / `Aevro` — rename in `components/TodoCard.tsx` and the `category` check in `db/schema.sql` | your own labels |
+| **To-do categories** | managed in-app — use the ＋ tab to add, ✎ to rename/delete. Starts seeded with "Personal" (see `db/schema.sql`). | no code changes needed |
 | **Weekly training split** | default `Push/Pull/Push/Pull/Legs` | edit inline on the Training page, or the default in `app/api/boostcamp/recent-body-map/route.ts` |
 | **Cron times** | `vercel.json` (UTC) | your schedule |
 

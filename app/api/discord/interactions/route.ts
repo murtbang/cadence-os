@@ -260,11 +260,10 @@ export async function POST(req: NextRequest) {
 
       // ── No text → list all open todos in two columns ───────────────────────
       if (!text) {
-        const { data: todos } = await supabase
-          .from('todos')
-          .select('text, priority, category, due_date')
-          .eq('completed', false)
-          .order('order', { ascending: true });
+        const [{ data: todos }, { data: cats }] = await Promise.all([
+          supabase.from('todos').select('text, priority, category, due_date').eq('completed', false).order('order', { ascending: true }),
+          supabase.from('todo_categories').select('name').order('order', { ascending: true }),
+        ]);
 
         type Row = { text: string; priority: string; category: string; due_date: string | null };
         const all = (todos ?? []) as Row[];
@@ -300,17 +299,23 @@ export async function POST(req: NextRequest) {
             embeds: [{
               title: `📋 Open todos — ${all.length}`,
               color: 0x5b8def,
-              fields: [
-                { name: 'Personal', value: fieldFor('personal'), inline: true },
-                { name: 'Aevro',    value: fieldFor('aevro'),    inline: true },
-              ],
+              fields: ((cats ?? []) as { name: string }[]).length
+                ? ((cats ?? []) as { name: string }[]).map(c => ({ name: c.name, value: fieldFor(c.name), inline: true }))
+                : [{ name: 'Personal', value: fieldFor('Personal'), inline: true }],
             }],
           },
         });
       }
 
       const priority = (opt('priority') as string) ?? 'low';
-      const category = (opt('category') as string) ?? 'personal';
+      // Match the given category name to an existing one (case-insensitive); else Personal.
+      const catRaw = (opt('category') as string | undefined)?.trim();
+      let category = 'Personal';
+      if (catRaw) {
+        const { data: cats } = await supabase.from('todo_categories').select('name');
+        const match = (cats ?? []).find((c: { name: string }) => c.name.toLowerCase() === catRaw.toLowerCase());
+        if (match) category = match.name;
+      }
       const dueRaw   = opt('due') as string | undefined;
 
       let due_date: string | null = null;
@@ -333,11 +338,10 @@ export async function POST(req: NextRequest) {
 
       await supabase.from('todos').insert({ text, priority, category, completed: false, order, due_date });
 
-      const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
       const dueLabel = due_date ? ` · 📅 due ${due_date}` : '';
       return NextResponse.json({
         type: 4,
-        data: { content: `✅ Added to **${categoryLabel}** → ${priority} priority: "${text}"${dueLabel}` },
+        data: { content: `✅ Added to **${category}** → ${priority} priority: "${text}"${dueLabel}` },
       });
     }
 

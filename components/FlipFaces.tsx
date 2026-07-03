@@ -184,7 +184,7 @@ export function NextTodoFace({ dueTodos }: { dueTodos: Todo[] }) {
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 9 }}>
           {dueTodos.slice(0, 5).map(t => {
             const m        = dueMeta(t.due_date!, today);
-            const catColor = t.category === 'aevro' ? 'var(--indigo)' : 'var(--blue)';
+            const catColor = t.priority === 'high' ? 'var(--red)' : 'var(--blue)';
             return (
               <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, minWidth: 0 }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: t.priority === 'high' ? 'var(--red)' : catColor, flexShrink: 0, marginTop: 6 }} />

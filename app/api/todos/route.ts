@@ -11,7 +11,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { text, priority, category = 'personal', due_date = null } = await req.json();
+  const { text, priority, category = 'Personal', due_date = null } = await req.json();
   if (!text || !priority) return NextResponse.json({ error: 'text and priority required' }, { status: 400 });
 
   // Scope order counter to category + priority so each tab sorts independently

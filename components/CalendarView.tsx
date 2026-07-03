@@ -43,17 +43,12 @@ interface Props {
   onToggle?: (id: string, completed: boolean) => Promise<void>;
 }
 
-const TODO_CAT_COLOR: Record<string, string> = {
-  personal: 'var(--blue)',
-  aevro:    'var(--indigo)',
-};
-
 function fmtShort(date: string) {
   return new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function CalendarTodoRow({ todo, overdue, onToggle }: { todo: Todo; overdue?: boolean; onToggle?: (id: string, completed: boolean) => Promise<void> }) {
-  const color = TODO_CAT_COLOR[todo.category] ?? 'var(--blue)';
+  const color = 'var(--blue)';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 10px', borderRadius: 'var(--r-md)', background: 'var(--bg)', border: overdue ? '1px solid var(--red)' : '1px solid transparent' }}>
       <button type="button" onClick={() => onToggle?.(todo.id, true)} aria-label={`Complete ${todo.text}`}
@@ -67,7 +62,7 @@ function CalendarTodoRow({ todo, overdue, onToggle }: { todo: Todo; overdue?: bo
         </div>
       </div>
       <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color, flexShrink: 0 }}>
-        {todo.category === 'aevro' ? 'Aevro' : 'Personal'}
+        {todo.category}
       </span>
     </div>
   );
