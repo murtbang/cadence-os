@@ -38,6 +38,7 @@ Each service has its own README and `.env.example`. **Set up the dashboard first
   - [7. Deploy to Vercel](#7-deploy-to-vercel)
   - [8. Scheduled jobs (cron)](#8-scheduled-jobs-cron)
   - [9. Optional extras](#9-optional-extras)
+  - [10. Companion services](#10-companion-services-optional)
 - [Customize it for you](#customize-it-for-you)
 - [Discord command reference](#discord-command-reference)
 - [Project structure](#project-structure)
@@ -61,11 +62,13 @@ Each service has its own README and `.env.example`. **Set up the dashboard first
 
 **Calendar** — a week strip plus a 30-day scrollable agenda from your Google Calendar, with timed to-dos overlaid on their due day.
 
-**Training** — 30-day weight chart, per-day workout history, PRs, and an editable weekly split target. Optionally auto-synced from Boostcamp.
+**Training** — 30-day weight chart, per-day workout history, a **muscle heatmap** (a body map showing which muscle groups you've hit recently), PRs, and an editable weekly split target. Optionally auto-synced from Boostcamp via the `boostcamp-sync` service.
 
 **Weather** — current conditions + a 7-day forecast (US National Weather Service, no API key needed).
 
 **Weekly snapshot** — habits, training, weight delta, and tasks completed, at a glance.
+
+**Notifications** — an in-app inbox. Notes you send with `/note` (or by voice) land here, with an unread badge in the sidebar.
 
 **Screen guard** — burn-in protection for wall-mounted tablets: night dimming, idle dim, and hold-to-peek.
 
@@ -111,12 +114,15 @@ You'll need free accounts for:
 | Service | Required? | For |
 |---|---|---|
 | [Supabase](https://supabase.com) | **Yes** | Database |
-| [Vercel](https://vercel.com) | **Yes** (to host) | Deployment + cron |
+| [Vercel](https://vercel.com) | **Yes** (to host the dashboard) | Deployment + cron |
 | [Discord](https://discord.com/developers) | Recommended | Bot commands, reminders, check-ins |
 | [Google Cloud](https://console.cloud.google.com) | Recommended | Calendar read/write |
-| [Anthropic](https://console.anthropic.com) | Optional | Voice-to-action |
+| [Anthropic](https://console.anthropic.com) | Optional | Voice-to-action **parsing** (Claude) — used by `/api/schedule` |
+| [OpenAI](https://platform.openai.com) | Optional | Voice-memo **transcription** (Whisper) — used by the `voice-scheduler` service |
+| [Boostcamp](https://www.boostcamp.app) | Optional | Source of workout data — used by the `boostcamp-sync` service |
+| [Railway](https://railway.app) | Optional | Hosts the two Python services in [`services/`](services) |
 
-Local tooling: **Node.js 18+** and **git**.
+Local tooling: **Node.js 18+** and **git** — plus **Python 3.11+** only if you run the services in [`services/`](services).
 
 ---
 
@@ -215,7 +221,33 @@ The schedules live in [`vercel.json`](vercel.json) and register automatically on
 ### 9. Optional extras
 
 - **Voice-to-action** (`/api/schedule`): set `ANTHROPIC_API_KEY` and `SCHEDULE_SECRET`. POST `{ "text": "dentist tuesday at 2pm" }` with header `x-schedule-secret`; an LLM routes it to the right action. Wire it to any transcription source — or deploy the ready-made **[`services/voice-scheduler/`](services/voice-scheduler)** Discord bot: drop a voice memo in a channel and it transcribes and schedules it for you.
-- **Boostcamp training sync**: the companion service in **[`services/boostcamp-sync/`](services/boostcamp-sync)** logs into Boostcamp, classifies workouts, and writes them to Supabase. Set `BOOSTCAMP_SYNC_URL` + `BOOSTCAMP_SYNC_SECRET` here, then deploy that service (see its README + `DEPLOY.md`).
+- **Boostcamp training sync**: the companion service in **[`services/boostcamp-sync/`](services/boostcamp-sync)** logs into Boostcamp, classifies workouts, and writes them to Supabase. Set `BOOSTCAMP_SYNC_URL` + `BOOSTCAMP_SYNC_SECRET` here, then deploy that service (see step 10).
+
+### 10. Companion services *(optional)*
+
+Two small Python services live in [`services/`](services). Both are **optional**, run on [Railway](https://railway.app) (each with its own **Root Directory**), and share your Supabase project. Set up the dashboard first — the services are only useful once it's live. Each folder has its own README and `.env.example`; the essentials are below.
+
+#### a) Boostcamp training sync — [`services/boostcamp-sync/`](services/boostcamp-sync)
+
+Logs into [Boostcamp](https://www.boostcamp.app), classifies each workout (Push/Pull/Legs + muscles worked), and writes it to Supabase to feed the Training view and muscle heatmap.
+
+1. **Database:** the required tables (`boostcamp_workouts`, `boostcamp_summary`) are **already created** if you ran `db/schema.sql`. Running the sync against a separate database instead? Use [`services/boostcamp-sync/migration.sql`](services/boostcamp-sync/migration.sql).
+2. **Deploy on Railway** from this repo with **Root Directory = `services/boostcamp-sync`**. It boots `python server.py` (see `railway.toml`); enable **App Sleeping** and **Generate Domain**.
+3. **Service env vars** (on Railway): `BOOSTCAMP_EMAIL`, `BOOSTCAMP_PASSWORD`, `SUPABASE_URL`, `SUPABASE_KEY` (the service_role key), `BOOSTCAMP_SYNC_SECRET` (any long random string). Optional: `DISCORD_WEBHOOK_URL` (workout/crash alerts), `TZ_OFFSET_MINUTES` (default `-420` = US Pacific).
+4. **Wire it to the dashboard:** set `BOOSTCAMP_SYNC_URL` (the Railway domain) and the **matching** `BOOSTCAMP_SYNC_SECRET` in Vercel. The `boostcamp-pull` cron then triggers it on schedule.
+
+Full walkthrough: [`services/boostcamp-sync/DEPLOY.md`](services/boostcamp-sync/DEPLOY.md).
+
+#### b) Voice scheduler — [`services/voice-scheduler/`](services/voice-scheduler)
+
+A Discord bot that turns a **voice memo** into a scheduled item. Pipeline: voice memo → **[OpenAI Whisper](https://platform.openai.com)** transcribes → POST to the dashboard's `/api/schedule` → **Claude** turns it into an event / to-do / habit / weight log / note.
+
+1. **Enable voice-to-action on the dashboard first** (step 9): set `ANTHROPIC_API_KEY` and `SCHEDULE_SECRET` in Vercel.
+2. **Discord:** create (or reuse) a bot application; enable **Message Content Intent**; invite it with *View Channels* + *Read Message History*; with Developer Mode on, right-click the watched channel → **Copy ID**.
+3. **Deploy on Railway** with **Root Directory = `services/voice-scheduler`**. It runs as a `worker` (see `Procfile`) — no public port.
+4. **Service env vars** (on Railway): `DISCORD_BOT_TOKEN`, `OPENAI_API_KEY`, `CHANNEL_ID`, `SCHEDULE_URL` (`https://<your-app>/api/schedule`), `SCHEDULE_SECRET` (**same** value you set in Vercel).
+
+Full walkthrough: [`services/voice-scheduler/README.md`](services/voice-scheduler).
 
 ---
 
