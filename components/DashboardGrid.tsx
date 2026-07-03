@@ -5,7 +5,6 @@ import HabitCard from './HabitCard';
 import NextEventCard from './NextEventCard';
 import RecentBodyMapCard from './RecentBodyMapCard';
 import BigGoalsCard from './BigGoalsCard';
-import GoveeCard from './GoveeCard';
 import FlipCard from './FlipCard';
 import DeadliftReminderFace from './DeadliftReminderFace';
 import { NextEventTomorrowFace, NextEventWeekFace, NextTodoFace, HabitStreaksFace, TrainingStatsFace, GoalsQuoteFace } from './FlipFaces';
@@ -104,7 +103,6 @@ export default function DashboardGrid(props: Props) {
         <FlipCard faces={[
           <BigGoalsCard key="goals" onNavigate={() => props.onNavigate('goals')} />,
           <GoalsQuoteFace key="quote" />,
-          <GoveeCard key="lights" />,
         ]} />
       </div>
     </div>

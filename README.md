@@ -39,7 +39,6 @@ It's built to run on a wall-mounted tablet (designed around a Samsung Galaxy Tab
 - **Training** — recent workout + weight trend.
 - **Habits** — today's checklist + streaks.
 - **Goals / Quote** — big-goal progress.
-- **Lights** — one-tap Govee scenes.
 
 **Habits** — AM/PM checklists with streaks and 7-day completion, soft-delete, per-period tracking.
 
@@ -79,7 +78,7 @@ It's built to run on a wall-mounted tablet (designed around a Samsung Galaxy Tab
                           ┌────────────────────────┐
                           │  Supabase (Postgres)   │  ◄── your data
                           └────────────────────────┘
-              external reads: Google Calendar (iCal + API), weather.gov, Govee
+              external reads: Google Calendar (iCal + API), weather.gov
 ```
 
 - **Framework:** Next.js 14 (App Router), React 18, TypeScript. Some controls use Ionic React; styling is Tailwind + inline styles.
@@ -101,7 +100,6 @@ You'll need free accounts for:
 | [Discord](https://discord.com/developers) | Recommended | Bot commands, reminders, check-ins |
 | [Google Cloud](https://console.cloud.google.com) | Recommended | Calendar read/write |
 | [Anthropic](https://console.anthropic.com) | Optional | Voice-to-action |
-| [Govee](https://developer.govee.com) | Optional | Smart-light control |
 
 Local tooling: **Node.js 18+** and **git**.
 
@@ -202,7 +200,6 @@ The schedules live in [`vercel.json`](vercel.json) and register automatically on
 ### 9. Optional extras
 
 - **Voice-to-action** (`/api/schedule`): set `ANTHROPIC_API_KEY` and `SCHEDULE_SECRET`. POST `{ "text": "dentist tuesday at 2pm" }` with header `x-schedule-secret`; an LLM routes it to the right action. Wire this to any voice/transcription source.
-- **Govee lights**: apply for a key at [developer.govee.com](https://developer.govee.com) → `GOVEE_API_KEY`. The dashboard Lights card auto-detects your devices.
 - **Boostcamp training sync**: a companion service (separate repo) that logs into Boostcamp, classifies workouts, and writes them to Supabase. Set `BOOSTCAMP_SYNC_URL` + `BOOSTCAMP_SYNC_SECRET`.
 
 ---

@@ -13,10 +13,9 @@ import WeatherView from '@/components/WeatherView';
 import TrainingView from '@/components/TrainingView';
 import GoalsView from '@/components/GoalsView';
 import ScreenGuard from '@/components/ScreenGuard';
-import GoveeCard from '@/components/GoveeCard';
 import { Habit, HabitLog, Todo, CalendarEvent, Notification, TodoCategory } from '@/types/database';
 
-type View = 'dashboard' | 'habits' | 'todos' | 'calendar' | 'settings' | 'notifications' | 'weekly' | 'goals' | 'weather' | 'training' | 'lights';
+type View = 'dashboard' | 'habits' | 'todos' | 'calendar' | 'settings' | 'notifications' | 'weekly' | 'goals' | 'weather' | 'training';
 
 const POLL_INTERVAL = 10000;
 

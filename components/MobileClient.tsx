@@ -9,19 +9,17 @@ import GoalsView from './GoalsView';
 import WeatherView from './WeatherView';
 import TrainingView from './TrainingView';
 import NotificationsView from './NotificationsView';
-import GoveeCard from './GoveeCard';
 import MobileTabBar, { MobileTab } from './MobileTabBar';
 import MobileHome from './MobileHome';
 import { useCadenceData } from '@/lib/useCadenceData';
 
-type MoreView = 'menu' | 'weekly' | 'goals' | 'weather' | 'training' | 'lights' | 'notifications' | 'settings';
+type MoreView = 'menu' | 'weekly' | 'goals' | 'weather' | 'training' | 'notifications' | 'settings';
 
 const MORE_ITEMS: { id: MoreView; label: string }[] = [
   { id: 'weekly',        label: 'Weekly Review' },
   { id: 'goals',         label: 'Daily Goals' },
   { id: 'weather',       label: 'Weather' },
   { id: 'training',      label: 'Training' },
-  { id: 'lights',        label: 'Lights' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'settings',      label: 'Settings' },
 ];
@@ -130,7 +128,6 @@ export default function MobileClient({ onSwitchToTablet }: { onSwitchToTablet: (
         {tab === 'more' && more === 'goals'    && <Fill><GoalsView /></Fill>}
         {tab === 'more' && more === 'weather'  && <Fill><WeatherView /></Fill>}
         {tab === 'more' && more === 'training' && <Fill><TrainingView /></Fill>}
-        {tab === 'more' && more === 'lights'   && <Fill><GoveeCard /></Fill>}
         {tab === 'more' && more === 'notifications' && (
           <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
             <NotificationsView
