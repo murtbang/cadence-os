@@ -52,7 +52,17 @@ function DueBadge({ date, completed }: { date: string; completed: boolean }) {
 }
 
 export default function TodoCard({ todos, categories, onToggle, onReorder, onAdd, onDelete, onEdit, onAddCategory, onRenameCategory, onDeleteCategory, onNavigate }: TodoCardProps) {
-  const firstCat = categories[0]?.name ?? 'Personal';
+  // Effective category tabs. Use the managed list, but ALSO surface any category
+  // that appears on a todo yet isn't managed (e.g. before the DB migration runs)
+  // so lists are never hidden. Matching is case-insensitive for the same reason.
+  const norm = (s: string) => (s ?? '').trim().toLowerCase();
+  const managedNames = new Set(categories.map(c => norm(c.name)));
+  const orphanCats = Array.from(new Set(todos.map(t => t.category).filter(Boolean) as string[]))
+    .filter(n => !managedNames.has(norm(n)))
+    .map((name, i): TodoCategory => ({ id: `orphan:${name}`, name, color: 'var(--gray-3)', order: 900 + i, created_at: '' }));
+  const cats = [...categories, ...orphanCats];
+  if (cats.length === 0) cats.push({ id: 'seed:Personal', name: 'Personal', color: 'var(--blue)', order: 0, created_at: '' });
+  const firstCat = cats[0].name;
   const [activeTab, setActiveTab] = useState<string>(firstCat);
   const [addingPriority, setAddingPriority] = useState<'high' | 'low' | null>(null);
   const [newText, setNewText] = useState('');
@@ -67,10 +77,11 @@ export default function TodoCard({ todos, categories, onToggle, onReorder, onAdd
 
   // Snap to a valid category on load or when the active one is deleted.
   useEffect(() => {
-    if (categories.length && !categories.some(c => c.name === activeTab)) {
-      setActiveTab(categories[0].name);
+    if (cats.length && !cats.some(c => norm(c.name) === norm(activeTab))) {
+      setActiveTab(cats[0].name);
     }
-  }, [categories, activeTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories, todos, activeTab]);
 
   // Reset add form when switching tabs
   useEffect(() => {
@@ -79,7 +90,7 @@ export default function TodoCard({ todos, categories, onToggle, onReorder, onAdd
     setNewDue('');
   }, [activeTab]);
 
-  const tabTodos  = todos.filter(t => (t.category ?? firstCat) === activeTab);
+  const tabTodos  = todos.filter(t => norm(t.category ?? firstCat) === norm(activeTab));
   const high      = sortByDue(tabTodos.filter(t => t.priority === 'high' && !t.completed));
   const low       = sortByDue(tabTodos.filter(t => t.priority === 'low'  && !t.completed));
   const done      = [
@@ -107,7 +118,7 @@ export default function TodoCard({ todos, categories, onToggle, onReorder, onAdd
     setAddingPriority(null);
   }, [newText, newDue, addingPriority, activeTab, onAdd]);
 
-  const activeColor = categories.find(c => c.name === activeTab)?.color ?? 'var(--blue)';
+  const activeColor = cats.find(c => norm(c.name) === norm(activeTab))?.color ?? 'var(--blue)';
 
   async function submitAddCat() {
     const n = newCatName.trim();
@@ -144,9 +155,10 @@ export default function TodoCard({ todos, categories, onToggle, onReorder, onAdd
 
         {/* ── Category tabs (dynamic) ───────────────────────────────────────── */}
         <div style={{ display: 'flex', gap: '4px', marginBottom: '0', overflowX: 'auto', alignItems: 'stretch' }}>
-          {categories.map(cat => {
-            const count  = todos.filter(t => (t.category ?? firstCat) === cat.name && !t.completed).length;
-            const active = activeTab === cat.name;
+          {cats.map(cat => {
+            const count   = todos.filter(t => norm(t.category ?? firstCat) === norm(cat.name) && !t.completed).length;
+            const active  = norm(activeTab) === norm(cat.name);
+            const managed = !cat.id.startsWith('orphan:') && !cat.id.startsWith('seed:');
 
             if (managing && renameId === cat.id) {
               return (
@@ -160,7 +172,7 @@ export default function TodoCard({ todos, categories, onToggle, onReorder, onAdd
 
             return (
               <button key={cat.id} type="button"
-                onClick={() => { if (managing) { setRenameId(cat.id); setRenameText(cat.name); } else setActiveTab(cat.name); }}
+                onClick={() => { if (managing && managed) { setRenameId(cat.id); setRenameText(cat.name); } else if (!managing) setActiveTab(cat.name); }}
                 style={{
                   flexShrink: 0, minHeight: '34px', padding: '0 12px', border: 'none',
                   borderRadius: 'var(--r-md) var(--r-md) 0 0',
@@ -175,7 +187,7 @@ export default function TodoCard({ todos, categories, onToggle, onReorder, onAdd
                 {count > 0 && (
                   <span style={{ fontSize: '9px', fontWeight: 900, background: active ? 'rgba(255,255,255,0.25)' : 'var(--gray-5)', color: active ? '#fff' : 'var(--gray-3)', borderRadius: 'var(--r-pill)', padding: '1px 5px', fontFamily: 'var(--font-geist-mono), monospace', lineHeight: 1.6 }}>{count}</span>
                 )}
-                {managing && (
+                {managing && managed && (
                   <span onClick={e => { e.stopPropagation(); setConfirmDelete(cat); }} title="Delete category"
                     style={{ marginLeft: '2px', fontSize: '13px', lineHeight: 1, opacity: 0.85 }}>×</span>
                 )}
