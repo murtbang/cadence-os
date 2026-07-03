@@ -1,0 +1,45 @@
+name: Cadence Cron Jobs
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # every 15 min — calendar alert
+    - cron: '0 14 * * *'     # 7am LA (PDT) — daily summary
+    - cron: '0 18 * * *'     # 10am LA (PDT) — AM habit reminder
+    - cron: '0 5 * * *'      # 9pm LA (PDT) — PM habit reminder
+  workflow_dispatch:          # allow manual trigger — runs all jobs
+
+jobs:
+  calendar-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping calendar alert
+        run: |
+          curl -sf -X GET "https://YOUR_APP.vercel.app/api/cron/calendar-alert" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  daily-summary:
+    if: github.event.schedule == '0 14 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping daily summary
+        run: |
+          curl -sf -X GET "https://YOUR_APP.vercel.app/api/cron/summary" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  habits-am:
+    if: github.event.schedule == '0 18 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping AM habit reminder
+        run: |
+          curl -sf -X GET "https://YOUR_APP.vercel.app/api/cron/habits-am" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  habits-pm:
+    if: github.event.schedule == '0 5 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping PM habit reminder
+        run: |
+          curl -sf -X GET "https://YOUR_APP.vercel.app/api/cron/habits-pm" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

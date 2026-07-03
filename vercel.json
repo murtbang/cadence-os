@@ -1,0 +1,13 @@
+{
+  "crons": [
+    { "path": "/api/cron/summary",        "schedule": "0 14 * * *" },
+    { "path": "/api/cron/checkin",        "schedule": "0 19 * * *" },
+    { "path": "/api/cron/checkin",        "schedule": "0 2 * * *"  },
+    { "path": "/api/cron/habits-am",      "schedule": "0 18 * * *" },
+    { "path": "/api/cron/habits-pm",      "schedule": "0 2 * * *"  },
+    { "path": "/api/cron/calendar-alert", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/boostcamp-pull", "schedule": "0 21 * * *" },
+    { "path": "/api/cron/boostcamp-pull", "schedule": "0 1 * * *"  },
+    { "path": "/api/cron/boostcamp-pull", "schedule": "0 6 * * *"  }
+  ]
+}
