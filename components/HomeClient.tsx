@@ -7,7 +7,6 @@ import HabitCard from '@/components/HabitCard';
 import TodoCard from '@/components/TodoCard';
 import CalendarCard from '@/components/CalendarCard';
 import CalendarView from '@/components/CalendarView';
-import GoalTrackerCard from '@/components/GoalTrackerCard';
 import NotificationsView from '@/components/NotificationsView';
 import WeeklyReviewView from '@/components/WeeklyReviewView';
 import WeatherView from '@/components/WeatherView';

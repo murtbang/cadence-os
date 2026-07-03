@@ -33,19 +33,6 @@ export interface Settings {
   value: string | null;
 }
 
-export interface FocusSession {
-  id: string;
-  goal: 'gre' | 'aevro' | 'ecopeptides';
-  duration_minutes: number;
-  todo_id: string | null;
-  completed_at: string;
-}
-
-export interface GoalTarget {
-  goal: 'gre' | 'aevro' | 'ecopeptides';
-  daily_minutes: number;
-}
-
 export interface Notification {
   id: string;
   message: string;

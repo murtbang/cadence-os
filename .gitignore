@@ -37,6 +37,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local tooling / editor config
+/.claude
+
 # planning files (local reference only)
 /planning
 
