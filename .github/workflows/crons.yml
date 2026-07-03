@@ -1,12 +1,31 @@
 name: Cadence Cron Jobs
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Free alternative to Vercel Cron: GitHub Actions pings your deployment's cron
+# routes on a schedule.
+#
+# DISABLED BY DEFAULT (the `schedule:` block below is commented out) so a fresh
+# clone or fork never runs — and never spams failure emails — before you've
+# pointed it at your own deployment.
+#
+# To enable it on YOUR deployment:
+#   1. Replace every `YOUR_APP.vercel.app` below with your real domain.
+#   2. Repo → Settings → Secrets and variables → Actions → New repository secret
+#      → add `CRON_SECRET` (the same value as in your Vercel env).
+#   3. Uncomment the `schedule:` block below.
+#   4. Repo → Actions tab → enable workflows if GitHub prompts you.
+#
+# Cron times are in UTC — adjust for your timezone. Sub-hourly schedules on
+# GitHub Actions are best-effort and can be delayed under load.
+# ─────────────────────────────────────────────────────────────────────────────
+
 on:
-  schedule:
-    - cron: '*/15 * * * *'   # every 15 min — calendar alert
-    - cron: '0 14 * * *'     # 7am LA (PDT) — daily summary
-    - cron: '0 18 * * *'     # 10am LA (PDT) — AM habit reminder
-    - cron: '0 5 * * *'      # 9pm LA (PDT) — PM habit reminder
-  workflow_dispatch:          # allow manual trigger — runs all jobs
+  # schedule:
+  #   - cron: '*/15 * * * *'   # every 15 min — calendar alert
+  #   - cron: '0 14 * * *'     # daily summary
+  #   - cron: '0 18 * * *'     # AM habit reminder
+  #   - cron: '0 5 * * *'      # PM habit reminder
+  workflow_dispatch:            # manual trigger — runs all jobs
 
 jobs:
   calendar-alert:
