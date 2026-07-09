@@ -3,6 +3,18 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+// True when the DB error means the todo_categories table has not been created
+// yet (migration not run). PostgREST reports PGRST205; Postgres reports 42P01.
+function isMissingTable(err: { code?: string; message?: string } | null | undefined): boolean {
+  if (!err) return false;
+  return err.code === 'PGRST205'
+      || err.code === '42P01'
+      || /could not find the table|relation.*does not exist/i.test(err.message ?? '');
+}
+
+const SETUP_MSG =
+  'Categories are not set up yet — run db/schema.sql in Supabase to create the todo_categories table.';
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json();
   const patch: Record<string, unknown> = {};
@@ -19,7 +31,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (typeof body.order === 'number') patch.order = body.order;
 
   const { error } = await supabase.from('todo_categories').update(patch).eq('id', params.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (isMissingTable(error)) return NextResponse.json({ error: SETUP_MSG }, { status: 503 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   // A category is referenced by todos.category = its name, so cascade renames.
   if (rename) {
@@ -29,8 +44,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const { data: cat } = await supabase
+  const { data: cat, error: catErr } = await supabase
     .from('todo_categories').select('name').eq('id', params.id).single();
+  // Missing table → clear setup message rather than a misleading "not found".
+  if (isMissingTable(catErr)) return NextResponse.json({ error: SETUP_MSG }, { status: 503 });
   if (!cat) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
   // Fallback = lowest-order remaining category. Refuse to delete the last one.
